@@ -1,341 +1,373 @@
 package com.tyczj.extendedcalendarview;
 
-import java.util.Calendar;
-import java.util.Locale;
-
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
 import android.view.GestureDetector.SimpleOnGestureListener;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.view.View.OnClickListener;
+
+import java.util.Calendar;
+import java.util.Locale;
+import java.util.TimeZone;
 
 public class ExtendedCalendarView extends RelativeLayout implements OnItemClickListener,
-	OnClickListener{
+        OnClickListener {
 
-	private Context context;
-	private OnDayClickListener dayListener;
-	private GridView calendar;
-	private CalendarAdapter mAdapter;
-	private Calendar cal;
-	private TextView month;
-	private RelativeLayout base;
-	private ImageView next,prev;
-	private int gestureType = 0;
-	private final GestureDetector calendarGesture = new GestureDetector(context,new GestureListener());
+    public static final int NO_GESTURE = 0;
+    public static final int LEFT_RIGHT_GESTURE = 1;
+    public static final int UP_DOWN_GESTURE = 2;
+    private static final int SWIPE_MIN_DISTANCE = 120;
+    private static final int SWIPE_THRESHOLD_VELOCITY = 200;
 
-	public static final int NO_GESTURE = 0;
-	public static final int LEFT_RIGHT_GESTURE = 1;
-	public static final int UP_DOWN_GESTURE = 2;
-	private static final int SWIPE_MIN_DISTANCE = 120;
-	private static final int SWIPE_THRESHOLD_VELOCITY = 200;
+    private Context mContext;
+    private GridView mCalendarGridView;
+    private ProgressBar mProgressView;
+    private CalendarAdapter mAdapter;
+    private Calendar mCalendar;
+    private TextView mMonthTextView;
+    private RelativeLayout mBackNavigation;
+    private ImageView mNextImageView;
+    private ImageView mPrevImageView;
+    private int mGestureType = 0;
 
-	public interface OnDayClickListener{
-		public void onDayClicked(AdapterView<?> adapter, View view, int position, long id, Day day);
-	}
+    private Day mSelectedDay;
 
-	public ExtendedCalendarView(Context context) {
-		super(context);
-		this.context = context;
-		init();
-	}
+    private OnDayClickListener mDayListener;
+    private final GestureDetector mCalendarGesture =
+            new GestureDetector(mContext, new GestureListener());
 
-	public ExtendedCalendarView(Context context, AttributeSet attrs) {
-		super(context, attrs);
-		this.context = context;
-		init();
-	}
 
-	public ExtendedCalendarView(Context context, AttributeSet attrs,int defStyle) {
-		super(context, attrs, defStyle);
-		this.context = context;
-		init();
-	}
+    public interface OnDayClickListener {
+        public void onDayClicked(AdapterView<?> adapter, View view, int position, long id, Day day);
+    }
 
-	private void init(){
-		cal = Calendar.getInstance();
-		base = new RelativeLayout(context);
-		base.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.WRAP_CONTENT));
-		base.setMinimumHeight(50);
+    public ExtendedCalendarView(Context context) {
+        super(context);
+        this.mContext = context;
+        init();
+    }
 
-		base.setId(4);
+    public ExtendedCalendarView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        this.mContext = context;
+        init();
+    }
 
-		LayoutParams params = new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT);
-		params.leftMargin = 16;
-		params.topMargin = 50;
-		params.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-		params.addRule(RelativeLayout.CENTER_VERTICAL);
-		prev = new ImageView(context);
-		prev.setId(1);
-		prev.setLayoutParams(params);
-		prev.setImageResource(R.drawable.navigation_previous_item);
-		prev.setOnClickListener(this);
-		base.addView(prev);
+    public ExtendedCalendarView(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
+        this.mContext = context;
+        init();
+    }
 
-		params = new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT);
-		params.addRule(RelativeLayout.CENTER_HORIZONTAL);
-		params.addRule(RelativeLayout.CENTER_VERTICAL);
-		month = new TextView(context);
-		month.setId(2);
-		month.setLayoutParams(params);
-		month.setTextAppearance(context, android.R.attr.textAppearanceLarge);
-		month.setText(cal.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.getDefault())+" "+cal.get(Calendar.YEAR));
-		month.setTextSize(25);
+    private void init() {
+        mCalendar = Calendar.getInstance();
+        removeAllViews();
+        /*
+        Inflating main view.
+         */
+        LayoutInflater.from(mContext).inflate(R.layout.layout_calendar, this);
 
-		base.addView(month);
+        /*
+        Finding view components.
+         */
+        mProgressView = (ProgressBar) findViewById(R.id.calendar_progress);
+        mBackNavigation = (RelativeLayout) findViewById(R.id.navigation);
+        mPrevImageView = (ImageView) findViewById(R.id.img_prev);
+        mMonthTextView = (TextView) findViewById(R.id.tv_month);
+        mNextImageView = (ImageView) findViewById(R.id.img_next);
+        mCalendarGridView = (GridView) findViewById(R.id.grid_calendar);
 
-		params = new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT);
-		params.rightMargin = 16;
-		params.topMargin = 50;
-		params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-		params.addRule(RelativeLayout.CENTER_VERTICAL);
-		next = new ImageView(context);
-		next.setImageResource(R.drawable.navigation_next_item);
-		next.setLayoutParams(params);
-		next.setId(3);
-		next.setOnClickListener(this);
+        mMonthTextView.setText(mCalendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.getDefault())
+                + " " + mCalendar.get(Calendar.YEAR));
 
-		base.addView(next);
+        mPrevImageView.setOnClickListener(this);
+        mNextImageView.setOnClickListener(this);
 
-		addView(base);
+        initAdapter();
+    }
 
-		params = new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT);
-		params.bottomMargin = 20;
-		params.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-		params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-		params.addRule(RelativeLayout.BELOW, base.getId());
+    private void initAdapter() {
 
-		calendar = new GridView(context);
-		calendar.setLayoutParams(params);
-		calendar.setVerticalSpacing(4);
-		calendar.setHorizontalSpacing(4);
-		calendar.setNumColumns(7);
-		calendar.setChoiceMode(GridView.CHOICE_MODE_SINGLE);
-		calendar.setDrawSelectorOnTop(true);
+        new InitializeAdapterTask().execute();
+        mCalendarGridView.setOnTouchListener(new OnTouchListener() {
 
-		mAdapter = new CalendarAdapter(context,cal);
-		calendar.setAdapter(mAdapter);
-		calendar.setOnTouchListener(new OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return mCalendarGesture.onTouchEvent(event);
+            }
+        });
+    }
 
-	        @Override
-	        public boolean onTouch(View v, MotionEvent event) {
-	            return calendarGesture.onTouchEvent(event);
-	        }
-	    });
+    private class InitializeAdapterTask extends AsyncTask<Void, Void, CalendarAdapter> {
 
-		addView(calendar);
-	}
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            showProgress();
+        }
 
-	private class GestureListener extends SimpleOnGestureListener {
-	    @Override
-	    public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,float velocityY) {
+        @Override
+        protected CalendarAdapter doInBackground(Void... params) {
+            mAdapter = new CalendarAdapter(mContext, mCalendar);
+            return mAdapter;
+        }
 
-	    	if(gestureType == LEFT_RIGHT_GESTURE){
-	    		if (e1.getX() - e2.getX() > SWIPE_MIN_DISTANCE && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
-		            nextMonth();
-		            return true; // Right to left
-		        } else if (e2.getX() - e1.getX() > SWIPE_MIN_DISTANCE && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
-		            previousMonth();
-		            return true; // Left to right
-		        }
-	    	}else if(gestureType == UP_DOWN_GESTURE){
-	        	if (e1.getY() - e2.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
-		        	nextMonth();
-		            return true; // Bottom to top
-		        } else if (e2.getY() - e1.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
-		        	previousMonth();
-		            return true; // Top to bottom
-		        }
-	        }
-	        return false;
-	    }
-	}
+        @Override
+        protected void onPostExecute(CalendarAdapter calendarAdapter) {
 
-	@Override
-	public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
-		if(dayListener != null){
-			Day d = (Day) mAdapter.getItem(arg2);
-			if(d.getDay() != 0){
-				dayListener.onDayClicked(arg0, arg1, arg2, arg3,d);
-			}
-		}
-	}
+            if (mCalendarGridView != null && isShown()) {
+                if (mSelectedDay != null) {
+                    calendarAdapter.setSelectedDay(mSelectedDay);
+                }
+                mCalendarGridView.setAdapter(calendarAdapter);
+            }
+            hideProgress();
+        }
+    }
 
-	/**
-	 *
-	 * @param listener
-	 *
-	 * Set a listener for when you press on a day in the month
-	 */
-	public void setOnDayClickListener(OnDayClickListener listener){
-		if(calendar != null){
-			dayListener = listener;
-			calendar.setOnItemClickListener(this);
-		}
-	}
+    private class GestureListener extends SimpleOnGestureListener {
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
 
-	@Override
-	public void onClick(View v) {
-		switch(v.getId()){
-		case 1:
-			previousMonth();
-			break;
-		case 3:
-			nextMonth();
-			break;
-		default:
-			break;
-		}
-	}
+            if (mGestureType == LEFT_RIGHT_GESTURE) {
+                if (e1.getX() - e2.getX() >
+                        SWIPE_MIN_DISTANCE && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
+                    cancelTouch(e1);
+                    nextMonth();
+                    return true; // Right to left
+                } else if (e2.getX() - e1.getX() >
+                        SWIPE_MIN_DISTANCE && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
+                    cancelTouch(e1);
+                    previousMonth();
+                    return true; // Left to right
+                }
+            } else if (mGestureType == UP_DOWN_GESTURE) {
+                if (e1.getY() - e2.getY() >
+                        SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
+                    cancelTouch(e1);
+                    nextMonth();
+                    return true; // Bottom to top
+                } else if (e2.getY() - e1.getY() >
+                        SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
+                    cancelTouch(e1);
+                    previousMonth();
+                    return true; // Top to bottom
+                }
+            }
+            return false;
+        }
+    }
 
-	private void previousMonth(){
-		if(cal.get(Calendar.MONTH) == cal.getActualMinimum(Calendar.MONTH)) {
-			cal.set((cal.get(Calendar.YEAR)-1),cal.getActualMaximum(Calendar.MONTH),1);
-		} else {
-			cal.set(Calendar.MONTH,cal.get(Calendar.MONTH)-1);
-		}
-		rebuildCalendar();
-	}
+    private void cancelTouch(MotionEvent e1) {
+        // Canceling touch (un-highlighting the item)
+        MotionEvent cancelEvent = MotionEvent.obtain(e1);
+        cancelEvent.setAction(MotionEvent.ACTION_CANCEL |
+                (e1.getActionIndex()
+                        << MotionEvent.ACTION_POINTER_INDEX_SHIFT));
+        dispatchTouchEvent(cancelEvent);
+    }
 
-	private void nextMonth(){
-		if(cal.get(Calendar.MONTH) == cal.getActualMaximum(Calendar.MONTH)) {
-			cal.set((cal.get(Calendar.YEAR)+1),cal.getActualMinimum(Calendar.MONTH),1);
-		} else {
-			cal.set(Calendar.MONTH,cal.get(Calendar.MONTH)+1);
-		}
-		rebuildCalendar();
-	}
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        if (mDayListener != null) {
+            Day d = (Day) mAdapter.getItem(position);
+            if (d.getDay() != 0) {
+                Calendar todayCal = Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault());
+                Calendar selectedCal = Calendar.getInstance();
+                selectedCal.set(d.getYear(), d.getMonth(), d.getDay());
+                if (selectedCal.getTimeInMillis() >= todayCal.getTimeInMillis()) {
+                    mDayListener.onDayClicked(parent, view, position, id, d);
+                    if (mAdapter != null) {
+                        mAdapter.setSelectedDay(d);
+                    }
+                }
+            }
 
-	private void rebuildCalendar(){
-		if(month != null){
-			month.setText(cal.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.getDefault())+" "+cal.get(Calendar.YEAR));
-			refreshCalendar();
-		}
-	}
 
-	/**
-	 * Refreshes the month
-	 */
-	public void refreshCalendar(){
-		mAdapter.refreshDays();
-		mAdapter.notifyDataSetChanged();
-	}
+        }
+    }
 
-	/**
-	 *
-	 * @param color
-	 *
-	 * Sets the background color of the month bar
-	 */
-	public void setMonthTextBackgroundColor(int color){
-		base.setBackgroundColor(color);
-	}
+    /**
+     * @param listener Set a listener for when you press on a day in the mMonthTextView
+     */
+    public void setOnDayClickListener(OnDayClickListener listener) {
+        if (mCalendarGridView != null) {
+            mDayListener = listener;
+            mCalendarGridView.setOnItemClickListener(this);
+        }
+    }
 
-	@SuppressLint("NewApi")
-	/**
-	 *
-	 * @param drawable
-	 *
-	 * Sets the background color of the month bar. Requires at least API level 16
-	 */
-	public void setMonthTextBackgroundDrawable(Drawable drawable){
-		if(Build.VERSION.SDK_INT > Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1){
-			base.setBackground(drawable);
-		}
+    @Override
+    public void onClick(View v) {
+        if (v.getId() == R.id.img_prev) {
+            previousMonth();
 
-	}
+        } else if (v.getId() == R.id.img_next) {
+            nextMonth();
 
-	/**
-	 *
-	 * @param resource
-	 *
-	 * Sets the background color of the month bar
-	 */
-	public void setMonehtTextBackgroundResource(int resource){
-		base.setBackgroundResource(resource);
-	}
+        }
+    }
 
-	/**
-	 *
-	 * @param recource
-	 *
-	 * change the image of the previous month button
-	 */
-	public void setPreviousMonthButtonImageResource(int recource){
-		prev.setImageResource(recource);
-	}
+    private void previousMonth() {
+        /* stop calendar move past this month */
+        if (mAdapter != null && mAdapter.getTodayCalendar().get(Calendar.MONTH) == mCalendar.get(Calendar.MONTH)) {
+            return;
+        }
+        if (mCalendar.get(Calendar.MONTH) == mCalendar.getActualMinimum(Calendar.MONTH)) {
+            mCalendar.set((mCalendar.get(Calendar.YEAR) - 1), mCalendar.getActualMaximum(Calendar.MONTH), 1);
+        } else {
+            mCalendar.set(Calendar.MONTH, mCalendar.get(Calendar.MONTH) - 1);
+        }
+        rebuildCalendar();
+    }
 
-	/**
-	 *
-	 * @param bitmap
-	 *
-	 * change the image of the previous month button
-	 */
-	public void setPreviousMonthButtonImageBitmap(Bitmap bitmap){
-		prev.setImageBitmap(bitmap);
-	}
+    private void nextMonth() {
+        if (mCalendar.get(Calendar.MONTH) == mCalendar.getActualMaximum(Calendar.MONTH)) {
+            mCalendar.set((mCalendar.get(Calendar.YEAR) + 1), mCalendar.getActualMinimum(Calendar.MONTH), 1);
+        } else {
+            mCalendar.set(Calendar.MONTH, mCalendar.get(Calendar.MONTH) + 1);
+        }
+        rebuildCalendar();
+    }
 
-	/**
-	 *
-	 * @param drawable
-	 *
-	 * change the image of the previous month button
-	 */
-	public void setPreviousMonthButtonImageDrawable(Drawable drawable){
-		prev.setImageDrawable(drawable);
-	}
+    private void hideProgress() {
+        if (mProgressView != null) {
+            mProgressView.setVisibility(INVISIBLE);
+        }
+    }
 
-	/**
-	 *
-	 * @param recource
-	 *
-	 * change the image of the next month button
-	 */
-	public void setNextMonthButtonImageResource(int recource){
-		next.setImageResource(recource);
-	}
+    private void showProgress() {
+        if (mProgressView != null) {
+            mProgressView.setVisibility(VISIBLE);
+        }
+    }
 
-	/**
-	 *
-	 * @param bitmap
-	 *
-	 * change the image of the next month button
-	 */
-	public void setNextMonthButtonImageBitmap(Bitmap bitmap){
-		next.setImageBitmap(bitmap);
-	}
+    public void rebuildCalendar() {
+        if (mMonthTextView != null) {
+            mMonthTextView.setText(mCalendar.getDisplayName(Calendar.MONTH, Calendar.LONG,
+                    Locale.getDefault()) + " " + mCalendar.get(Calendar.YEAR));
+            refreshCalendar();
+        }
+    }
 
-	/**
-	 *
-	 * @param drawable
-	 *
-	 * change the image of the next month button
-	 */
-	public void setNextMonthButtonImageDrawable(Drawable drawable){
-		next.setImageDrawable(drawable);
-	}
+    /**
+     * Refreshes the mMonthTextView
+     */
+    public void refreshCalendar() {
+        mAdapter.refreshDays();
+        mAdapter.notifyDataSetChanged();
+    }
 
-	/**
-	 *
-	 * @param gestureType
-	 *
-	 * Allow swiping the calendar left/right or up/down to change the month.
-	 *
-	 * Default value no gesture
-	 */
-	public void setGesture(int gestureType){
-		this.gestureType = gestureType;
-	}
+    /**
+     * @param color Sets the background color of the mMonthTextView bar
+     */
+    public void setMonthTextBackgroundColor(int color) {
+        mBackNavigation.setBackgroundColor(color);
+    }
+
+    @SuppressLint("NewApi")
+    /**
+     *
+     * @param drawable
+     *
+     * Sets the background color of the mMonthTextView bar. Requires at least API level 16
+     */
+    public void setMonthTextBackgroundDrawable(Drawable drawable) {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1) {
+            mBackNavigation.setBackground(drawable);
+        }
+
+    }
+
+    /**
+     * @param resource Sets the background color of the mMonthTextView bar
+     */
+    public void setMonthTextBackgroundResource(int resource) {
+        mBackNavigation.setBackgroundResource(resource);
+    }
+
+    /**
+     * @param recource change the image of the previous mMonthTextView button
+     */
+    public void setPreviousMonthButtonImageResource(int recource) {
+        mPrevImageView.setImageResource(recource);
+    }
+
+    /**
+     * @param bitmap change the image of the previous mMonthTextView button
+     */
+    public void setPreviousMonthButtonImageBitmap(Bitmap bitmap) {
+        mPrevImageView.setImageBitmap(bitmap);
+    }
+
+    /**
+     * @param drawable change the image of the previous mMonthTextView button
+     */
+    public void setPreviousMonthButtonImageDrawable(Drawable drawable) {
+        mPrevImageView.setImageDrawable(drawable);
+    }
+
+    /**
+     * @param recource change the image of the mNextImageView mMonthTextView button
+     */
+    public void setNextMonthButtonImageResource(int recource) {
+        mNextImageView.setImageResource(recource);
+    }
+
+    /**
+     * @param bitmap change the image of the mNextImageView mMonthTextView button
+     */
+    public void setNextMonthButtonImageBitmap(Bitmap bitmap) {
+        mNextImageView.setImageBitmap(bitmap);
+    }
+
+    /**
+     * @param drawable change the image of the mNextImageView mMonthTextView button
+     */
+    public void setNextMonthButtonImageDrawable(Drawable drawable) {
+        mNextImageView.setImageDrawable(drawable);
+    }
+
+    /**
+     * @param gestureType Allow swiping the mCalendarGridView left/right or up/down to
+     *                    change the mMonthTextView.
+     *                    <p/>
+     *                    Default value no gesture
+     */
+    public void setGesture(int gestureType) {
+        this.mGestureType = gestureType;
+    }
+
+    /**
+     * Rebuilds calendar view according to new data.
+     *
+     * @param calendar New calendar to display.
+     */
+    public void setCalendar(Calendar calendar) {
+        mCalendar = calendar;
+        rebuildCalendar();
+    }
+
+    public void setSelectedDay(Day selectedDay) {
+        this.mSelectedDay = selectedDay;
+        if (mAdapter != null) {
+            mAdapter.setSelectedDay(selectedDay);
+        }
+    }
 
 }

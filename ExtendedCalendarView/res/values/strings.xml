@@ -1,12 +1,19 @@
 <resources>
 
     <string name="app_name">ExtendedCalendarView</string>
-    <string name="monday">MON</string>
-    <string name="tuesday">TUE</string>
-    <string name="wednesday">WED</string>
-    <string name="thursday">THU</string>
-    <string name="friday">FRI</string>
-    <string name="saturday">SAT</string>
-    <string name="sunday">SUN</string>
+    <string name="monday">Monday</string>
+    <string name="monday_short">MON</string>
+    <string name="tuesday">Tuesday</string>
+    <string name="tuesday_short">TUE</string>
+    <string name="wednesday">Wednesday</string>
+    <string name="wednesday_short">WED</string>
+    <string name="thursday">Thursday</string>
+    <string name="thursday_short">THU</string>
+    <string name="friday">Friday</string>
+    <string name="friday_short">FRI</string>
+    <string name="saturday">Saturday</string>
+    <string name="saturday_short">SAT</string>
+    <string name="sunday">Sunday</string>
+    <string name="sunday_short">SUN</string>
 
 </resources>

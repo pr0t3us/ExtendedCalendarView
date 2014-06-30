@@ -15,10 +15,11 @@
             android:layout_height="@dimen/text_height_width"
             android:layout_centerInParent="true"
             android:id="@+id/today_frame"
-            android:background="@drawable/today" />
+            android:background="@drawable/today"
+            android:visibility="gone"/>
 
         <TextView
-            android:id="@+id/textView1"
+            android:id="@+id/dayTextView"
             android:layout_width="@dimen/text_height_width"
             android:layout_height="@dimen/text_height_width"
             android:layout_centerInParent="true"
@@ -34,37 +35,39 @@
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:layout_alignParentRight="true"
-            android:src="@drawable/quickcontact_badge_overlay_normal_light" />
+            android:src="@drawable/quickcontact_badge_overlay_normal_light"
+            android:scaleType="fitXY"
+            android:adjustViewBounds="true" />
 
         <ImageView
             android:id="@+id/imageView4"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignTop="@+id/imageView2"
-            android:layout_marginBottom="3dp"
-            android:layout_marginLeft="2dp"
             android:layout_toRightOf="@+id/imageView3"
-            android:src="@drawable/green" />
+            android:src="@drawable/green"
+            android:scaleType="fitXY"
+            android:adjustViewBounds="true" />
 
         <ImageView
             android:id="@+id/imageView5"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignTop="@+id/imageView2"
-            android:layout_marginBottom="3dp"
-            android:layout_marginLeft="2dp"
             android:layout_toRightOf="@+id/imageView4"
-            android:src="@drawable/orange" />
+            android:src="@drawable/orange"
+            android:scaleType="fitXY"
+            android:adjustViewBounds="true" />
 
         <ImageView
             android:id="@+id/imageView6"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignTop="@+id/imageView2"
-            android:layout_marginBottom="3dp"
-            android:layout_marginLeft="2dp"
             android:layout_toRightOf="@+id/imageView5"
-            android:src="@drawable/red" />
+            android:src="@drawable/red"
+            android:scaleType="fitXY"
+            android:adjustViewBounds="true" />
 
         <ImageView
             android:id="@+id/imageView2"
@@ -72,19 +75,19 @@
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:layout_alignParentLeft="true"
-            android:layout_marginBottom="3dp"
-            android:layout_marginLeft="2dp"
-            android:src="@drawable/blue" />
+            android:src="@drawable/blue"
+            android:scaleType="fitXY"
+            android:adjustViewBounds="true" />
 
         <ImageView
             android:id="@+id/imageView3"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignTop="@+id/imageView2"
-            android:layout_marginBottom="3dp"
-            android:layout_marginLeft="2dp"
             android:layout_toRightOf="@+id/imageView2"
-            android:src="@drawable/purple" />
+            android:src="@drawable/purple"
+            android:scaleType="fitXY"
+            android:adjustViewBounds="true" />
     </RelativeLayout>
 
 </RelativeLayout>
