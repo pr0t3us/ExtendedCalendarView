@@ -23,7 +23,7 @@ import android.view.View.OnClickListener;
 
 public class ExtendedCalendarView extends RelativeLayout implements OnItemClickListener,
 	OnClickListener{
-	
+
 	private Context context;
 	private OnDayClickListener dayListener;
 	private GridView calendar;
@@ -34,13 +34,13 @@ public class ExtendedCalendarView extends RelativeLayout implements OnItemClickL
 	private ImageView next,prev;
 	private int gestureType = 0;
 	private final GestureDetector calendarGesture = new GestureDetector(context,new GestureListener());
-	
+
 	public static final int NO_GESTURE = 0;
 	public static final int LEFT_RIGHT_GESTURE = 1;
 	public static final int UP_DOWN_GESTURE = 2;
 	private static final int SWIPE_MIN_DISTANCE = 120;
 	private static final int SWIPE_THRESHOLD_VELOCITY = 200;
-	
+
 	public interface OnDayClickListener{
 		public void onDayClicked(AdapterView<?> adapter, View view, int position, long id, Day day);
 	}
@@ -50,27 +50,27 @@ public class ExtendedCalendarView extends RelativeLayout implements OnItemClickL
 		this.context = context;
 		init();
 	}
-	
+
 	public ExtendedCalendarView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		this.context = context;
 		init();
 	}
-	
+
 	public ExtendedCalendarView(Context context, AttributeSet attrs,int defStyle) {
 		super(context, attrs, defStyle);
 		this.context = context;
 		init();
 	}
-	
+
 	private void init(){
 		cal = Calendar.getInstance();
 		base = new RelativeLayout(context);
 		base.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.WRAP_CONTENT));
 		base.setMinimumHeight(50);
-		
+
 		base.setId(4);
-		
+
 		LayoutParams params = new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT);
 		params.leftMargin = 16;
 		params.topMargin = 50;
@@ -82,7 +82,7 @@ public class ExtendedCalendarView extends RelativeLayout implements OnItemClickL
 		prev.setImageResource(R.drawable.navigation_previous_item);
 		prev.setOnClickListener(this);
 		base.addView(prev);
-		
+
 		params = new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT);
 		params.addRule(RelativeLayout.CENTER_HORIZONTAL);
 		params.addRule(RelativeLayout.CENTER_VERTICAL);
@@ -92,9 +92,9 @@ public class ExtendedCalendarView extends RelativeLayout implements OnItemClickL
 		month.setTextAppearance(context, android.R.attr.textAppearanceLarge);
 		month.setText(cal.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.getDefault())+" "+cal.get(Calendar.YEAR));
 		month.setTextSize(25);
-		
+
 		base.addView(month);
-		
+
 		params = new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT);
 		params.rightMargin = 16;
 		params.topMargin = 50;
@@ -105,17 +105,17 @@ public class ExtendedCalendarView extends RelativeLayout implements OnItemClickL
 		next.setLayoutParams(params);
 		next.setId(3);
 		next.setOnClickListener(this);
-		
+
 		base.addView(next);
-		
+
 		addView(base);
-		
+
 		params = new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT);
 		params.bottomMargin = 20;
 		params.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
 		params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
 		params.addRule(RelativeLayout.BELOW, base.getId());
-		
+
 		calendar = new GridView(context);
 		calendar.setLayoutParams(params);
 		calendar.setVerticalSpacing(4);
@@ -123,24 +123,24 @@ public class ExtendedCalendarView extends RelativeLayout implements OnItemClickL
 		calendar.setNumColumns(7);
 		calendar.setChoiceMode(GridView.CHOICE_MODE_SINGLE);
 		calendar.setDrawSelectorOnTop(true);
-		
+
 		mAdapter = new CalendarAdapter(context,cal);
 		calendar.setAdapter(mAdapter);
 		calendar.setOnTouchListener(new OnTouchListener() {
-			
+
 	        @Override
 	        public boolean onTouch(View v, MotionEvent event) {
 	            return calendarGesture.onTouchEvent(event);
 	        }
 	    });
-		
+
 		addView(calendar);
 	}
 
 	private class GestureListener extends SimpleOnGestureListener {
 	    @Override
 	    public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,float velocityY) {
-	    	
+
 	    	if(gestureType == LEFT_RIGHT_GESTURE){
 	    		if (e1.getX() - e2.getX() > SWIPE_MIN_DISTANCE && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
 		            nextMonth();
@@ -171,11 +171,11 @@ public class ExtendedCalendarView extends RelativeLayout implements OnItemClickL
 			}
 		}
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @param listener
-	 * 
+	 *
 	 * Set a listener for when you press on a day in the month
 	 */
 	public void setOnDayClickListener(OnDayClickListener listener){
@@ -198,32 +198,32 @@ public class ExtendedCalendarView extends RelativeLayout implements OnItemClickL
 			break;
 		}
 	}
-	
+
 	private void previousMonth(){
-		if(cal.get(Calendar.MONTH) == cal.getActualMinimum(Calendar.MONTH)) {				
+		if(cal.get(Calendar.MONTH) == cal.getActualMinimum(Calendar.MONTH)) {
 			cal.set((cal.get(Calendar.YEAR)-1),cal.getActualMaximum(Calendar.MONTH),1);
 		} else {
 			cal.set(Calendar.MONTH,cal.get(Calendar.MONTH)-1);
 		}
 		rebuildCalendar();
 	}
-	
+
 	private void nextMonth(){
-		if(cal.get(Calendar.MONTH) == cal.getActualMaximum(Calendar.MONTH)) {				
+		if(cal.get(Calendar.MONTH) == cal.getActualMaximum(Calendar.MONTH)) {
 			cal.set((cal.get(Calendar.YEAR)+1),cal.getActualMinimum(Calendar.MONTH),1);
 		} else {
 			cal.set(Calendar.MONTH,cal.get(Calendar.MONTH)+1);
 		}
 		rebuildCalendar();
 	}
-	
+
 	private void rebuildCalendar(){
 		if(month != null){
 			month.setText(cal.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.getDefault())+" "+cal.get(Calendar.YEAR));
 			refreshCalendar();
 		}
 	}
-	
+
 	/**
 	 * Refreshes the month
 	 */
@@ -231,107 +231,107 @@ public class ExtendedCalendarView extends RelativeLayout implements OnItemClickL
 		mAdapter.refreshDays();
 		mAdapter.notifyDataSetChanged();
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @param color
-	 * 
+	 *
 	 * Sets the background color of the month bar
 	 */
 	public void setMonthTextBackgroundColor(int color){
 		base.setBackgroundColor(color);
 	}
-	
+
 	@SuppressLint("NewApi")
 	/**
-	 * 
+	 *
 	 * @param drawable
-	 * 
+	 *
 	 * Sets the background color of the month bar. Requires at least API level 16
 	 */
 	public void setMonthTextBackgroundDrawable(Drawable drawable){
 		if(Build.VERSION.SDK_INT > Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1){
 			base.setBackground(drawable);
 		}
-		
+
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @param resource
-	 * 
+	 *
 	 * Sets the background color of the month bar
 	 */
 	public void setMonehtTextBackgroundResource(int resource){
 		base.setBackgroundResource(resource);
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @param recource
-	 * 
+	 *
 	 * change the image of the previous month button
 	 */
 	public void setPreviousMonthButtonImageResource(int recource){
 		prev.setImageResource(recource);
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @param bitmap
-	 * 
+	 *
 	 * change the image of the previous month button
 	 */
 	public void setPreviousMonthButtonImageBitmap(Bitmap bitmap){
 		prev.setImageBitmap(bitmap);
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @param drawable
-	 * 
+	 *
 	 * change the image of the previous month button
 	 */
 	public void setPreviousMonthButtonImageDrawable(Drawable drawable){
 		prev.setImageDrawable(drawable);
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @param recource
-	 * 
+	 *
 	 * change the image of the next month button
 	 */
 	public void setNextMonthButtonImageResource(int recource){
 		next.setImageResource(recource);
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @param bitmap
-	 * 
+	 *
 	 * change the image of the next month button
 	 */
 	public void setNextMonthButtonImageBitmap(Bitmap bitmap){
 		next.setImageBitmap(bitmap);
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @param drawable
-	 * 
+	 *
 	 * change the image of the next month button
 	 */
 	public void setNextMonthButtonImageDrawable(Drawable drawable){
 		next.setImageDrawable(drawable);
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @param gestureType
-	 * 
-	 * Allow swiping the calendar left/right or up/down to change the month. 
-	 * 
+	 *
+	 * Allow swiping the calendar left/right or up/down to change the month.
+	 *
 	 * Default value no gesture
 	 */
 	public void setGesture(int gestureType){
